@@ -90,11 +90,8 @@ urlpatterns = [
     path('doctor-view-appointment', doctor_view_appointment_view,name='doctor-view-appointment'),
     path('doctor-delete-appointment',doctor_delete_appointment_view,name='doctor-delete-appointment'),
     path('delete-appointment/<int:id>', delete_appointment_view,name='delete-appointment'),
-    path('doctor-timeslots', doctor_timeslots_view,name='doctor-timeslots'),
-    path('doctor-view-timeslots', doctor_view_timeslots_view,name='doctor-view-timeslots'),
-    path('delete-slot/<int:id>', doctor_delete_timeslot, name='delete-slot'),
-    path('doctor-add-timeslot', doctor_add_timeslot_view, name='doctor-add-timeslot'),
     path('get_timeslots', get_timeslots, name='get_timeslots'),
+    path('get_reserved_appointments', get_reserved_appointments, name='get_timeslots'),
 
 
 

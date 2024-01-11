@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta, time
 import datetime
 from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.http import HttpResponseRedirect, JsonResponse
@@ -603,10 +603,9 @@ def reject_appointment_view(request, id):
 def doctor_dashboard_view(request):
     # For Three Cards 
     doctor = get_object_or_404(Doctor,user=request.user)
-    patientCount = Patient.objects.all().filter(status=True, assignedDoctor=doctor).count()
+    patientCount = Patient.objects.all().filter(status=True, assignedDoctor_id=doctor).count()
     appointmentCount = Appointment.objects.all().filter(status=True, doctor=doctor).count()
     patientdischarged = PatientDischargeDetails.objects.all().distinct().filter(doctor=doctor).count()
-    timeSlots = TimeSlot.objects.all().distinct().filter(doctor=doctor).count()
 
     # For table in Doctor Dashboard 
     appointments = Appointment.objects.all().filter(status=True, doctor=doctor).order_by('-id')
@@ -621,7 +620,6 @@ def doctor_dashboard_view(request):
     'patientdischarged':patientdischarged,
     'appointments':appointments,
     'doctor':Doctor.objects.get(user_id=request.user.id), #for profile picture of doctor in sidebar
-    'timeSlotsCounts':timeSlots,
     }
     return render(request,'doctor_dashboard.html',context=mydict)
 
@@ -718,76 +716,42 @@ def delete_appointment_view(request,id):
     appointments=zip(appointments,patients)
     return render(request,'doctor_delete_appointment.html',{'appointments':appointments,'doctor':doctor})
 
-
-
-@login_required(login_url='doctorlogin')
-@user_passes_test(is_doctor)
-def doctor_timeslots_view(request):
-    doctor = Doctor.objects.get(user_id=request.user.id)
-    return render(request,'doctor_timeslot_view.html',{'doctor':doctor})
-
-
-
-@login_required(login_url='doctorlogin')
-@user_passes_test(is_doctor)
-def doctor_view_timeslots_view(request):
-    doctor = get_object_or_404(Doctor, user=request.user)
-    timeSlots = TimeSlot.objects.all().filter(doctor = doctor)
-    return render(request,'doctor_view_timeslots.html',{'timeSlots':timeSlots,'doctor':doctor})
     
-@login_required(login_url='doctorlogin')
-@user_passes_test(is_doctor)
-def doctor_delete_timeslot(request,id):
-    timeslot = TimeSlot.objects.get(id=id)
-    timeslot.delete()
-    doctor = Doctor.objects.get(user_id = request.user.id)
-    return redirect('doctor-view-timeslots')    
-
-
-
-@login_required(login_url='doctorlogin')
-@user_passes_test(is_doctor)
-def doctor_add_timeslot_view(request):
-    doctor = get_object_or_404(Doctor, user=request.user)
-    timeslotform = TimeSlotForm()
-    context = {
-        'TimeSlotForm': timeslotform,
-        'doctor': doctor,
-    }
-    if request.method == 'POST':
-        start = request.POST.get('startTime')
-        end = request.POST.get('endTime')
-        start_time = datetime.datetime.strptime(start, "%H:%M")
-        end_time = datetime.datetime.strptime(end, "%H:%M")
-        duration = (end_time - start_time) / 6
-        current_time = start_time
-
-        for i in range(6):
-            timeslotform = TimeSlotForm(request.POST) # a new instance of the TimeSlotForm is created within each iteration of the loop, This ensures that a new form instance is created for each time slot, allowing the data to be saved correctly.
-            print(i)
-            if timeslotform.is_valid():
-                timeslot = timeslotform.save(commit=False)
-                timeslot.doctor = doctor
-                timeslot.startDate = request.POST.get('startDate')
-                timeslot.endDate = request.POST.get('endDate')
-                timeslot.startTime = current_time
-                timeslot.endTime = current_time + duration
-                timeslot.isValid = True
-                timeslot.save()
-                current_time += duration
-
-        return HttpResponseRedirect('doctor-view-timeslots')
-    return render(request,'doctor_add_timeslot_view.html',context=context)
 
 def get_timeslots(request):
-    print('Hello From get_timeslots')
     doctor_id = int(request.GET.get('doctorId'))
     doctor = get_object_or_404(Doctor, user_id=doctor_id)
-    print(doctor_id)
-    timeslots = TimeSlot.objects.all().filter(doctor=doctor)
-    timeslot_choices = {timeslot.id: str(timeslot) for timeslot in timeslots}
-    return JsonResponse({'timeslots': timeslot_choices})
-    
+    date_str = request.GET.get('date')
+    date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    print('Date is: ', date)
+
+    appointments = Appointment.objects.filter(doctor=doctor, date=date)
+    work_start = doctor.workStart
+    work_start_datetime = datetime.datetime.combine(date, work_start)
+    print('Work Starts At:', work_start_datetime)
+    work_hours = doctor.workHours
+    work_ends = work_start_datetime + timedelta(hours=work_hours)
+
+    reserved_appointments = Appointment.objects.filter(doctor=doctor, date=date)
+    reserved_timeslots = [appointment.time for appointment in reserved_appointments]
+    print('Reserved Time Slots are:', reserved_timeslots)
+
+    available_timeslots = []
+    current_time = work_start_datetime
+    while current_time + timedelta(minutes=30) <= work_ends:
+        if current_time.time() not in reserved_timeslots:
+            available_timeslots.append(current_time.time())
+        current_time += timedelta(minutes=30)
+    print('Available Time Slots are:', available_timeslots)
+
+    return JsonResponse([time.strftime('%H:%M') for time in available_timeslots], safe=False)
+
+
+def get_reserved_appointments(request):
+    doctor_id = int(request.GET.get('doctorId'))
+    doctor = get_object_or_404(Doctor, user_id=doctor_id)
+    appointments = Appointment.objects.all().filter(doctor=doctor)
+    return JsonResponse({'appointments': appointments,})
 
 
 
@@ -832,21 +796,23 @@ def patient_book_appointment_view(request):
     appointmentForm = PatientAppointmentForm()
     patient = Patient.objects.get(user_id=request.user.id) 
     message = None
-    print(request.POST.get('doctorId'))
     mydict={'appointmentForm':appointmentForm,'patient':patient,'message':message}
     if request.method=='POST':
         appointmentForm = PatientAppointmentForm(request.POST)
         print('Appointment Form Errors : ',appointmentForm.errors)
         if appointmentForm.is_valid():
             print('doctor ID is: ',request.POST.get('doctorId'))
-            print('timeslot is :', request.POST.get('timeslot'))
+            print('Date is :', request.POST.get('Date'))
+            print('Time is : ', request.POST.get('Time'))
             desc = request.POST.get('description')
             doctor = get_object_or_404(Doctor, user_id=request.POST.get('doctorId'))
-            timeslot = appointmentForm.cleaned_data['timeslot']
+            date = appointmentForm.cleaned_data['date']
+            time = appointmentForm.cleaned_data['time']
             appointment = appointmentForm.save(commit=False)
             appointment.doctor = doctor
             appointment.patient = patient
-            appointment.timeslot =  timeslot 
+            appointment.date =  date
+            appointment.time = time 
             appointment.status=False
             appointment.save()
             return HttpResponseRedirect('patient-view-appointment')

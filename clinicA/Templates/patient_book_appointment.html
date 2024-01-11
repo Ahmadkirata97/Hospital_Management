@@ -49,33 +49,66 @@
 </head>
 <br><br>
 {% if message %}
-<script>
-  var a = "{{message}}";
-  alert(a);
-</script>
-
+  <script>
+    var a = "{{ message }}";
+    alert(a);
+  </script>
 {% endif %}
 
 <script>
-console.log('Hello Script');
-$(document).ready(function() {
-  var timeslotField = $("#timeslot");
-  var doctorId = $("#doctorId");
-  doctorId.change(function() {
-    $.ajax({
-      url: 'get_timeslots',
-      data: {
-        doctorId: doctorId.val()
-      },
-      success: function(data) {
-        timeslotField.empty();
-        $.each(data.timeslots, function(key, value) {
-          timeslotField.append($('<option></option>').attr('value', key).text(value));
+  $(document).ready(function() {
+    console.log("Hello Script")
+    var timeslotField = $("#timeslot");
+    var doctorIdField = $("#doctorId");
+    var dateField = $("#date");
+  
+    // Function to populate the timeslot field
+    function populateTimeslots() {
+      var selectedDoctorId = doctorIdField.val();
+      var selectedDate = dateField.val();
+  
+      // Make sure both the selectedDoctorId and selectedDate are not empty before making the AJAX request
+      if (selectedDoctorId && selectedDate) {
+        $.ajax({
+          url: 'get_timeslots',
+          data: {
+            doctorId: selectedDoctorId,
+            date: selectedDate
+          },
+          success: function(data) {
+            console.log(data);
+            timeslotField.empty();
+            $.each(data, function(index, timeslot) {
+              var option = $('<option></option>').attr('value', timeslot).text(timeslot);
+  
+              // Add a click event listener to the option
+              option.click(function() {
+                timeslotField.find("option").removeAttr("selected");
+                option.attr("selected", "selected");
+              });
+  
+              timeslotField.append(option);
+            });
+            timeslotField.attr('multiple', true);
+          },
+          error: function(xhr, status, error) {
+            console.log("Error:", error);
+          }
         });
+      } else {
+        timeslotField.empty();
+        timeslotField.attr('multiple', false);
       }
+    }
+  
+    // Add event listeners to the doctorId and date fields
+    doctorIdField.add(dateField).change(function() {
+      populateTimeslots();
     });
+  
+    // Initial population of timeslots based on the default values of the doctorId and date fields
+    populateTimeslots();
   });
-});
 </script>
 
 <!------ add appointment page by patient(sumit)  ---------->
@@ -93,26 +126,22 @@ $(document).ready(function() {
               {% render_field appointmentForm.description class="form-control" placeholder="Description" %}
             </div>
             <div class="form-group">
-              {% render_field appointmentForm.doctorId class="form-control" id="doctorId" placeholder="doctor" %}
-              {% render_field appointmentForm.timeslot class="form-control" id="timeslot" placeholder="Date and Time" %}
+              {% render_field appointmentForm.doctorId class="form-control" id="doctorId" placeholder="Doctor" %}
             </div>
-            
-
-
-
+            <div class="form-group">
+              {% render_field appointmentForm.date class="form-control" id="date" placeholder="Date" %}
+            </div>
+            <div class="form-group">
+              <select id="timeslot" class="form-control" name="time" placeholder="Time">
+                <!-- Options will be dynamically added here -->
+              </select>
+            </div>
           </div>
-
         </div>
         <button type="submit" class="btnSubmit">Book</button>
       </div>
     </div>
   </div>
 </form>
-<!--
-developed By : sumit kumar
-facebook : fb.com/sumit.luv
-youtube : youtube.com/lazycoders
--->
-
 
 {% endblock content %}
