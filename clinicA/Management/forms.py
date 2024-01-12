@@ -53,7 +53,11 @@ class AppointmentForm(forms.ModelForm):
     patientId=forms.ModelChoiceField(queryset=Patient.objects.all().filter(status=True),empty_label="Patient Name and Symptoms", to_field_name="user_id")
     class Meta:
         model=Appointment
-        fields=['description','status']
+        fields=['description','status','time','date']
+        widgets = {
+            'time': forms.TimeInput(),
+            'date': forms.DateInput(),
+        }
 
 
 

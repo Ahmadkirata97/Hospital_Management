@@ -92,8 +92,8 @@ class Patient(models.Model):
 
 
 class Appointment(models.Model):
-    patient = models.OneToOneField(Patient,on_delete=models.CASCADE)
-    doctor = models.OneToOneField(Doctor, on_delete=models.CASCADE)
+    patient = models.ForeignKey(Patient,on_delete=models.CASCADE)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     time = models.TimeField(null = False, blank = False)
     date = models.DateField(null = False, blank = False)
     description = models.TextField(max_length=500)
@@ -102,14 +102,14 @@ class Appointment(models.Model):
 
 
     def __str__(self):
-        return f"{self.patient.name}'s Appointment on {self.date}"
+        return f"{self.patient.user.first_name}'s Appointment on {self.date}"
 
 
 
 
 class PatientDischargeDetails(models.Model):
-    patient = models.OneToOneField(Patient,on_delete=models.CASCADE)
-    doctor = models.OneToOneField(Doctor, on_delete=models.CASCADE, null=True)
+    patient = models.ForeignKey(Patient,on_delete=models.CASCADE)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, null=True)
     admitDate = models.DateField(null=False)
     releaseDate = models.DateField(null=False)
     daySpent = models.PositiveIntegerField(null=False)

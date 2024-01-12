@@ -260,6 +260,7 @@ def admin_add_doctor_view(request):
             doctor.status = True
             doctor.workHours = request.POST.get('workHours')
             doctor.workDays = request.POST.getlist('workDays')
+            doctor.workStart= request.POST.get('workStart')
             doctor.save()
             my_doctor_group = Group.objects.get_or_create(name='DOCTOR')
             my_doctor_group[0].user_set.add(user)
@@ -553,10 +554,12 @@ def admin_add_appointment_view(request):
         appointment_form = AppointmentForm(request.POST)
         if appointment_form.is_valid():
             appointment = appointment_form.save(commit=False)
-            appointment.doctorId = request.POST.get('doctorId')
-            appointment.patientId = request.POST.get('patientId')
-            appointment.doctorName = User.objects.all().get(id=request.POST.get('doctorId')).first_name
-            appointment.patientName = User.objects.all().get(id=request.POST.get('patientId')).first_name
+            doctor = get_object_or_404(Doctor, user_id=request.POST.get('doctorId'))
+            patient = get_object_or_404(Patient, user_id=request.POST.get('patientId'))
+            appointment.doctor = doctor
+            appointment.patient = patient
+            appointment.date = appointment_form.cleaned_data['date']
+            appointment.time = appointment_form.cleaned_data['time']
             appointment.status = True
             appointment.save()
             return HttpResponseRedirect('admin-view-appointment')
@@ -577,11 +580,8 @@ def admin_approve_appointment_view(request):
 @user_passes_test(is_admin)
 def approve_appointment_view(request, id):
     appointment = Appointment.objects.get(id=id)
-    timeslot = appointment.timeslot
-    timeslot.isValid = False
     appointment.status = True
     appointment.save()
-    timeslot.save()
     return redirect(reverse('admin-approve-appointment'))
 
 
@@ -725,7 +725,6 @@ def get_timeslots(request):
     date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
     print('Date is: ', date)
 
-    appointments = Appointment.objects.filter(doctor=doctor, date=date)
     work_start = doctor.workStart
     work_start_datetime = datetime.datetime.combine(date, work_start)
     print('Work Starts At:', work_start_datetime)
@@ -804,7 +803,6 @@ def patient_book_appointment_view(request):
             print('doctor ID is: ',request.POST.get('doctorId'))
             print('Date is :', request.POST.get('Date'))
             print('Time is : ', request.POST.get('Time'))
-            desc = request.POST.get('description')
             doctor = get_object_or_404(Doctor, user_id=request.POST.get('doctorId'))
             date = appointmentForm.cleaned_data['date']
             time = appointmentForm.cleaned_data['time']

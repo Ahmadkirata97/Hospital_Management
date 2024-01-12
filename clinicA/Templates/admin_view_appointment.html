@@ -36,6 +36,7 @@ facebook : fb.com/sumit.luv
           <th>Patient Name</th>
           <th>Description</th>
           <th>Date</th>
+          <th>Time</th>
         </tr>
       </thead>
       {% for a in appointments %}
@@ -43,7 +44,8 @@ facebook : fb.com/sumit.luv
         <td> {{a.doctor.get_name}}</td>
         <td>{{a.patient.get_name}}</td>
         <td>{{a.description}}</td>
-        <td>{{a.timeslot.get_date}}</td>
+        <td>{{a.date}}</td>
+        <td>{{a.time}}</td>
       </tr>
       {% endfor %}
     </table>
