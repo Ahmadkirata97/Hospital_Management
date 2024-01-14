@@ -91,7 +91,8 @@ urlpatterns = [
     path('doctor-delete-appointment',doctor_delete_appointment_view,name='doctor-delete-appointment'),
     path('delete-appointment/<int:id>', delete_appointment_view,name='delete-appointment'),
     path('get_timeslots', get_timeslots, name='get_timeslots'),
-    path('get_reserved_appointments', get_reserved_appointments, name='get_timeslots'),
+    path('add-report/<int:id>', doctor_add_report_view, name='add-report'),
+    
 
 
 

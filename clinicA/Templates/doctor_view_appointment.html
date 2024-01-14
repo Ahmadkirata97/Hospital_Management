@@ -35,7 +35,9 @@
           <th>Description</th>
           <th>Mobile</th>
           <th>Address</th>
-          <th>Appointment Date</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Add Report</th>
         </tr>
       </thead>
       {% for a,p in appointments %}
@@ -45,7 +47,9 @@
         <td>{{a.description}}</td>
         <td>{{p.mobile}}</td>
         <td>{{p.address}}</td>
-        <td>{{a.timeslot.get_date}}</td>
+        <td>{{a.date}}</td>
+        <td>{{a.time}}</td>
+        <td><a class="btn btn-primary btn-xs" href="{% url 'add-report' p.id  %}"><span class="glyphicon glyphicon-edit"></span></a></td>
       </tr>
       {% endfor %}
     </table>

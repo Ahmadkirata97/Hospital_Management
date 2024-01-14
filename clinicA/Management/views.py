@@ -639,7 +639,7 @@ def doctor_patient_view(request):
 @user_passes_test(is_doctor)
 def doctor_view_patient_view(request):
     doctor = get_object_or_404(Doctor,user_id=request.user.id)
-    patients = Patient.objects.all().filter(status=True, assignedDoctor=doctor)
+    patients = Patient.objects.all().filter(status=True, assignedDoctor_id=doctor)
     doctor = Doctor.objects.get(user_id = request.user.id)
     return render(request,'doctor_view_patient.html',{'patients':patients,'doctor':doctor})
 
@@ -746,11 +746,35 @@ def get_timeslots(request):
     return JsonResponse([time.strftime('%H:%M') for time in available_timeslots], safe=False)
 
 
-def get_reserved_appointments(request):
-    doctor_id = int(request.GET.get('doctorId'))
-    doctor = get_object_or_404(Doctor, user_id=doctor_id)
-    appointments = Appointment.objects.all().filter(doctor=doctor)
-    return JsonResponse({'appointments': appointments,})
+def doctor_add_report_view(request,id):  
+    report_form = AddReport() 
+    appointment = get_object_or_404(Appointment, pk=id)
+    if request.method == 'POST':
+        report_form=AddReport(request.POST)
+        print('Form Errors : ', report_form.errors)
+        if report_form.is_valid():
+            report = report_form.save(commit=False)
+            print('Report is : ',request.POST.get('patientReport'))
+            appointment.patientReport = report.patientReport
+            appointment.save()
+            return redirect('doctor-view-appointment')
+    return render(request, 'doctor_add_report.html',{'report_form': report_form})
+
+
+
+def doctor_add_report(request,id):
+    report_form = AddReport()
+    appointment = get_object_or_404(Appointment, pk=id)
+    if request.method == 'POST':
+        report_form=AddReport(request.POST)
+        print('Form Errors : ', report_form.errors)
+        if report_form.is_valid():
+            report = report_form.save(commit=False)
+            print('Report is : ',request.POST.get('patientReport'))
+            appointment.patientReport = report.patientReport
+            appointment.save()
+            return redirect('doctor-view-appointment')
+    return render(request, 'doctor_add_report.html')
 
 
 
