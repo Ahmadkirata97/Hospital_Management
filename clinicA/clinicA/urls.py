@@ -92,6 +92,7 @@ urlpatterns = [
     path('delete-appointment/<int:id>', delete_appointment_view,name='delete-appointment'),
     path('get_timeslots', get_timeslots, name='get_timeslots'),
     path('add-report/<int:id>', doctor_add_report_view, name='add-report'),
+    path('view-hisyory/<int:id>', doctor_view_patient_history, name='view-history'),
     
 
 

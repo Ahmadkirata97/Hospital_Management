@@ -28,36 +28,32 @@
 
     <form  action="/search" method="get" style="margin-left:70%;" class="form-inline my-2 my-lg-0">
       <input class="form-control mr-sm-2" type="search" placeholder="Search" name="query" id="query" aria-label="Search">
-      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
     </form>
  
 
-  {% if patients %}
+  {% if appointments %}
   <div class="panel panel-primary">
     <div class="panel-heading">
-      <h6 class="panel-title">Your Total Patient List</h6>
+      <h6 class="panel-title">Appointments History For Patient {{appointments.0.patient}}</h6>
     </div>
     <table class="table table-hover" id="dev-table">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Profile Picture</th>
-          <th>Symptoms</th>
-          <th>Mobile</th>
-          <th>Address</th>
-          <th>Patient History</th>
+          <th>Doctor</th>
+          <th>Appointment Date</th>
+          <th>Appointment Time</th>
+          <th>Description</th>
+          <th>Report</th>
 
         </tr>
       </thead>
-      {% for p in patients %}
+      {% for p in appointments %}
       <tr>
-        <td> {{p.get_name}}</td>
-        <td> <img src="{% static p.profile_image.url %}" alt="Profile Pic" height="40px" width="40px" /></td>
-        <td>{{p.symptoms}}</td>
-        <td>{{p.mobile}}</td>
-        <td>{{p.address}}</td>
-        <td><a class="btn btn-primary btn-xs" href="{% url 'view-history' p.id  %}"><span class="glyphicon glyphicon-edit"></span></a></td>
-      </tr>
+        <td> {{p.doctor}}</td>
+        <td>{{p.date}}</td>
+        <td>{{p.time}}</td>
+        <td>{{p.description}}</td>
+        <td>{{p.patientReport}}</td>
       {% endfor %}
     </table>
   </div>
@@ -68,10 +64,5 @@
 
 
 </div>
-<!--
-developed By : sumit kumar
-facebook : fb.com/sumit.luv
-youtube : youtube.com/lazycoders
--->
 
 {% endblock content %}

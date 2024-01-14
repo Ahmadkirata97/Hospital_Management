@@ -762,19 +762,13 @@ def doctor_add_report_view(request,id):
 
 
 
-def doctor_add_report(request,id):
-    report_form = AddReport()
-    appointment = get_object_or_404(Appointment, pk=id)
-    if request.method == 'POST':
-        report_form=AddReport(request.POST)
-        print('Form Errors : ', report_form.errors)
-        if report_form.is_valid():
-            report = report_form.save(commit=False)
-            print('Report is : ',request.POST.get('patientReport'))
-            appointment.patientReport = report.patientReport
-            appointment.save()
-            return redirect('doctor-view-appointment')
-    return render(request, 'doctor_add_report.html')
+def doctor_view_patient_history(request,id):
+    patient = get_object_or_404(Patient, pk=id)
+    appointments = Appointment.objects.all().filter(patient=patient)
+    doctor = patient.assignedDoctor_id
+    return render(request, 'doctor_view_patient_history.html',{'appointments':appointments,'doctor':doctor})
+    
+
 
 
 
