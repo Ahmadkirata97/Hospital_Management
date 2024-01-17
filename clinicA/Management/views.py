@@ -166,7 +166,7 @@ def admin_dashboard_view(request):
     pendingPatientCount = Patient.objects.all().filter(status=False).count()
 
     appointmentCount = Appointment.objects.all().filter(status=True).count()
-    pendingAppointmentCount =   Appointment.objects.all().filter(status=False).count()
+    pendingAppointmentCount =   Appointment.objects.all().filter(status=False,passed=False).count()
 
     dict = {
         'doctors': doctors,
@@ -571,7 +571,7 @@ def admin_add_appointment_view(request):
 @user_passes_test(is_admin)
 def admin_approve_appointment_view(request):
     #those whose approval are needed
-    appointments=Appointment.objects.all().filter(status=False)
+    appointments=Appointment.objects.all().filter(status=False, passed=False)
     return render(request,'admin_approve_appointment.html',{'appointments':appointments})
 
 
@@ -604,7 +604,7 @@ def doctor_dashboard_view(request):
     # For Three Cards 
     doctor = get_object_or_404(Doctor,user=request.user)
     patientCount = Patient.objects.all().filter(status=True, assignedDoctor_id=doctor).count()
-    appointmentCount = Appointment.objects.all().filter(status=True, doctor=doctor).count()
+    appointmentCount = Appointment.objects.all().filter(status=True, doctor=doctor, passed=False).count()
     patientdischarged = PatientDischargeDetails.objects.all().distinct().filter(doctor=doctor).count()
 
     # For table in Doctor Dashboard 
@@ -676,7 +676,7 @@ def doctor_appointment_view(request):
 @user_passes_test(is_doctor)
 def doctor_view_appointment_view(request):
     doctor = get_object_or_404(Doctor,user_id=request.user.id)
-    appointments = Appointment.objects.all().filter(status=True,doctor=doctor)
+    appointments = Appointment.objects.all().filter(status=True,doctor=doctor, passes=False)
     doctor = Doctor.objects.get(user_id=request.user.id)
     patientId = []
     for a in appointments:
@@ -731,7 +731,7 @@ def get_timeslots(request):
     work_hours = doctor.workHours
     work_ends = work_start_datetime + timedelta(hours=work_hours)
 
-    reserved_appointments = Appointment.objects.filter(doctor=doctor, date=date)
+    reserved_appointments = Appointment.objects.filter(doctor=doctor, date=date, passed=False)
     reserved_timeslots = [appointment.time for appointment in reserved_appointments]
     print('Reserved Time Slots are:', reserved_timeslots)
 
@@ -756,6 +756,7 @@ def doctor_add_report_view(request,id):
             report = report_form.save(commit=False)
             print('Report is : ',request.POST.get('patientReport'))
             appointment.patientReport = report.patientReport
+            appointment.passed = True
             appointment.save()
             return redirect('doctor-view-appointment')
     return render(request, 'doctor_add_report.html',{'report_form': report_form})
@@ -912,6 +913,23 @@ def contactus_view(request):
             send_mail(str(name)+' || '+str(email),message,settings.EMAIL_HOST_USER, settings.EMAIL_RECEIVING_USER, fail_silently = False)
             return render(request, 'contactussuccess.html')
     return render(request, 'contactus.html', {'form':sub})
+
+
+
+
+
+#-------------------------------------------------------------------
+#------------------------When Apointment Time Ends------------------
+def appointment_time_end():
+    current_date = datetime.datetime.date()
+    appointments = Appointment.objects.all()
+    for appointment in appointments:
+        if appointment.date < current_date :
+            appointment.passed = True
+            appointment.status = False
+            appointment.save()
+
+
 
 
 

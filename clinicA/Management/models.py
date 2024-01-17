@@ -99,6 +99,7 @@ class Appointment(models.Model):
     description = models.TextField(max_length=500)
     patientReport = models.CharField(max_length=1000)
     status = models.BooleanField(default=False)
+    passed = models.BooleanField(default=False)
 
 
     def __str__(self):
