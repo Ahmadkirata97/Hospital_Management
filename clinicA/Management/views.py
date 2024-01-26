@@ -437,9 +437,9 @@ def admin_discharge_patient_view(request):
 def discharge_patient_view(request,id):
     patient=Patient.objects.get(id=id)
     print('patient User ID Is : ', patient.user_id)
-    print('Assigned Doctor ID is : ', patient.assignedDoctorId)
+    print('Assigned Doctor ID is : ', patient.assignedDoctor_id)
     days=(date.today()-patient.admitDate) #2 days, 0:00:00
-    assignedDoctor=User.objects.all().filter(id=patient.assignedDoctorId)
+    doctor = get_object_or_404(Doctor, user=patient.assignedDoctor_id.user)
     d=days.days # only how many day that is 2
     patientDict={
         'patientId':id,
@@ -450,7 +450,7 @@ def discharge_patient_view(request,id):
         'admitDate':patient.admitDate,
         'todayDate':date.today(),
         'day':d,
-        'assignedDoctorName':assignedDoctor[0].first_name,
+        'assignedDoctorName':doctor.user.first_name,
     }
     if request.method == 'POST':
         feeDict ={
@@ -463,12 +463,8 @@ def discharge_patient_view(request,id):
         patientDict.update(feeDict)
         #for updating to database patientDischargeDetails (pDD)
         pDD=PatientDischargeDetails()
-        pDD.patientId=id
-        pDD.patientName=patient.get_name
-        pDD.assignedDoctorName=assignedDoctor[0].first_name
-        pDD.address=patient.address
-        pDD.mobile=patient.mobile
-        pDD.symptoms=patient.symptoms
+        pDD.patient=patient
+        pDD.doctor=doctor
         pDD.admitDate=patient.admitDate
         pDD.releaseDate=date.today()
         pDD.daySpent=int(d)
@@ -506,13 +502,14 @@ def render_to_pdf(template_src, context_dict):
 
 
 def download_pdf_view(request,id):
-    dischargeDetails=PatientDischargeDetails.objects.all().filter(patientId=id).order_by('-id')[:1]
+    patient = Patient.objects.get(id=id)
+    dischargeDetails=PatientDischargeDetails.objects.all().filter(patient=patient).order_by('-id')[:1]
     dict={
-        'patientName':dischargeDetails[0].patientName,
-        'assignedDoctorName':dischargeDetails[0].assignedDoctorName,
-        'address':dischargeDetails[0].address,
-        'mobile':dischargeDetails[0].mobile,
-        'symptoms':dischargeDetails[0].symptoms,
+        'patientName':dischargeDetails[0].patient,
+        'assignedDoctorName':dischargeDetails[0].doctor,
+        'address':patient.address,
+        'mobile':patient.mobile,
+        'symptoms':patient.symptoms,
         'admitDate':dischargeDetails[0].admitDate,
         'releaseDate':dischargeDetails[0].releaseDate,
         'daySpent':dischargeDetails[0].daySpent,
