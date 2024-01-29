@@ -1,0 +1,78 @@
+services:
+  # Flower for monitoring celery
+  flower:
+    image: mher/flower
+    container_name: hm_fl
+    ports:
+      - 5555:5555
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672/
+
+   # The message Broker   
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: hm_mq
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  # Django Application  
+  django:
+    container_name: hm_dj
+    volumes:
+      - .:/usr/src/app/
+    build: 
+      context: .
+      dockerfile: DockerFiles/django.dockerfile
+    ports:
+      - 8001:8000
+    environment:
+      - DEBUG=1 
+      - SECRET_KEY=cjLCnPANCpNCpoAWBfiacmKANOIOAIWDBncoiaWBd
+      - ALLOWED_HOSTS=local_host,127.0.0.1
+      - DB_NAME=HmanagementDB
+      - DB_USER=postgres
+      - DB_PASSWORD=0938460904am
+    command: python manage.py runserver 0.0.0.0:8000
+
+  # Celery Service 
+  celery1:
+    container_name: hm_ce1
+    volumes:
+      - .:/usr/src/app/
+    build: 
+      context: .
+      dockerfile: DockerFiles/django.dockerfile
+    image: clinica_celery1:latest
+   # command: celery --app=clinicA worker -l INFO -Q tasks
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=cjLCnPANCpNCpoAWBfiacmKANOIOAIWDBncoiaWBd
+      - ALLOWED_HOSTS=local_host,127.0.0.1
+    depends_on:
+      - django
+      - rabbitmq
+  # DB
+  postgresql:
+    image: postgres
+    container_name: hm_db
+    ports:
+    - 5432:5432
+    environment:
+      - POSTGRES_DB=HmanagementDB
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=0938460904am
+    volumes:
+      - ./data:/var/lib/postgresql/data
+
+  # The Web Tier
+  web:
+    image: nginx
+    container_name: hm_web  
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+  
+  # redis server 
+  redis:
+    container_name: redis 
+    image: redis:7.0.11-alpine

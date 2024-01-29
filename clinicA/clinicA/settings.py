@@ -24,13 +24,12 @@ STATIC_DIR=os.path.join(BASE_DIR,'static')
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%!q(5^m98e#+@$qdy75^%=uclc7dwta(+5!tsk*j$w40!hv8qe'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
-ALLOWED_HOSTS = []
+DEBUG = os.environ.get("DEBUG")
 
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(",") 
 
 # Application definition
 
@@ -151,4 +150,9 @@ EMAIL_HOST_PASSWORD = 'xyz' # host email password required
 # otherwise you will get SMTPAuthenticationError at /contactus
 # this process is required because google blocks apps authentication by default
 EMAIL_RECEIVING_USER = ['to@gmail.com'] # email on which you will receive messages sent from website
+
+
+# Celery Settings 
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER', "amqp://guest:guest@rabbitmq:5672/")
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_BROKER', "redis://redis:6379/0")
 

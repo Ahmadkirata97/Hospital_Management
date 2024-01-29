@@ -1,5 +1,6 @@
 from datetime import date, timedelta, time
 import datetime
+from celery import shared_task
 from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth.models import Group
@@ -9,6 +10,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .forms import *
 from .models import *
+from .tasks import * 
+
 
 # Create your views here.
 
@@ -246,11 +249,12 @@ def admin_add_doctor_view(request):
     doctorform = docktorForm()
     dict = {
         'userForm': userform,
-        'doctorForm': doctorform
+        'doctorForm': doctorform,
     }
     if request.method == 'POST':
         userform = docktorUserForm(request.POST)
         doctorform = docktorForm(request.POST, request.FILES)
+        # print('errors: ',docktorForm.errors())
         if userform.is_valid() and doctorform.is_valid() :
             user = userform.save()
             user.set_password(user.password)
@@ -432,6 +436,7 @@ def admin_discharge_patient_view(request):
 
 
 
+
 @login_required(login_url='adminlogin')
 @user_passes_test(is_admin)
 def discharge_patient_view(request,id):
@@ -461,24 +466,27 @@ def discharge_patient_view(request,id):
             'total':(int(request.POST['roomCharge'])*int(d))+int(request.POST['doctorFee'])+int(request.POST['medicineCost'])+int(request.POST['OtherCharge'])
         }
         patientDict.update(feeDict)
-        #for updating to database patientDischargeDetails (pDD)
-        pDD=PatientDischargeDetails()
-        pDD.patient=patient
-        pDD.doctor=doctor
-        pDD.admitDate=patient.admitDate
-        pDD.releaseDate=date.today()
-        pDD.daySpent=int(d)
-        pDD.medicineCost=int(request.POST['medicineCost'])
-        pDD.roomCharge=int(request.POST['roomCharge'])*int(d)
-        pDD.doctorFee=int(request.POST['doctorFee'])
-        pDD.OtherCharge=int(request.POST['OtherCharge'])
-        pDD.total=(int(request.POST['roomCharge'])*int(d))+int(request.POST['doctorFee'])+int(request.POST['medicineCost'])+int(request.POST['OtherCharge'])
-        pDD.save()
+        medicineCost=int(request.POST['medicineCost'])
+        roomCharge=int(request.POST['roomCharge'])*int(d)
+        doctorFee=int(request.POST['doctorFee'])
+        OtherCharge=int(request.POST['OtherCharge'])
+        total=(int(request.POST['roomCharge'])*int(d))+int(request.POST['doctorFee'])+int(request.POST['medicineCost'])+int(request.POST['OtherCharge'])
+        print('Other Charge :', OtherCharge)
+        print('Total : ', total)
+        #for updating to database patientDischargeDetails (pDD) Send Function to celery Worker 
+        discharge_patient_view_post.delay(
+        id=id,
+        feeDict=feeDict,
+        medicineCost=feeDict['medicineCost'],
+        roomCharge=feeDict['roomCharge'],
+        doctorFee=feeDict['doctorFee'],
+        OtherCharge=feeDict['OtherCharge'],
+        total=feeDict['total']
+        )
+
         return render(request,'patient_final_bill.html',context=patientDict)
     return render(request,'patient_generate_bill.html',context=patientDict)
-
-
-
+    
 #------------------------- For PatientDischarging PDF & Printing --------------------------------
 #------------------------------------------------------------------------------------------------
 
